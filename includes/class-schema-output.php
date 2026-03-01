@@ -43,6 +43,18 @@ class CJC_Schema_Output {
             return;
         }
 
+        // Check for meta-based FAQ schema on any post or page
+        $faq_meta = get_post_meta( $post->ID, '_cjc_faq_schema', true );
+        if ( ! empty( $faq_meta ) && ! self::has_existing_schema( $post->ID, 'faq' ) ) {
+            $json_ld = CJC_FAQ_Schema::generate_schema_from_meta( $post->ID );
+            if ( ! empty( $json_ld ) ) {
+                echo "\n<!-- CJC Auto Schema: FAQ (meta) -->\n";
+                echo $json_ld;
+                echo "<!-- /CJC Auto Schema -->\n";
+            }
+            return;
+        }
+
         // Check for Recipe schema on posts in recipe categories
         if ( is_single() && $post->post_type === 'post' ) {
             $this->output_recipe_schema( $post );

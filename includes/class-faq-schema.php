@@ -284,6 +284,56 @@ class CJC_FAQ_Schema {
     }
 
     /**
+     * Generate FAQ schema JSON-LD from post meta
+     *
+     * Reads _cjc_faq_schema meta (JSON string of Q&A pairs) and returns
+     * a complete <script type="application/ld+json"> tag.
+     *
+     * @param int $post_id The post or page ID
+     * @return string JSON-LD script tag, or empty string if no valid data
+     */
+    public static function generate_schema_from_meta( $post_id ) {
+        $raw = get_post_meta( $post_id, '_cjc_faq_schema', true );
+        if ( empty( $raw ) ) {
+            return '';
+        }
+
+        $faqs = json_decode( $raw, true );
+        if ( ! is_array( $faqs ) || empty( $faqs ) ) {
+            return '';
+        }
+
+        $main_entity = array();
+        foreach ( $faqs as $faq ) {
+            if ( empty( $faq['question'] ) || empty( $faq['answer'] ) ) {
+                continue;
+            }
+            $main_entity[] = array(
+                '@type'          => 'Question',
+                'name'           => $faq['question'],
+                'acceptedAnswer' => array(
+                    '@type' => 'Answer',
+                    'text'  => $faq['answer'],
+                ),
+            );
+        }
+
+        if ( empty( $main_entity ) ) {
+            return '';
+        }
+
+        $schema = array(
+            '@context'   => 'https://schema.org',
+            '@type'      => 'FAQPage',
+            'mainEntity' => $main_entity,
+        );
+
+        return '<script type="application/ld+json">' . "\n" .
+               wp_json_encode( $schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . "\n" .
+               '</script>' . "\n";
+    }
+
+    /**
      * Get FAQ data for a specific page by slug (for admin preview)
      *
      * @param string $page_slug The page slug
